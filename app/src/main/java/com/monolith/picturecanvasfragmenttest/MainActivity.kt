@@ -25,6 +25,8 @@ class MainActivity : AppCompatActivity(),FirstFragment.OnFabListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(findViewById(R.id.toolbar))
+
+        GLOBAL.DIRECTORY= filesDir.toString()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

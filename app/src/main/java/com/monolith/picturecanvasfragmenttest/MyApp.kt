@@ -8,6 +8,8 @@ class MyApp: Application(){
 
     var ImageBuffer: Bitmap?=null
 
+    var DIRECTORY:String?=null
+
     //このコメント下にグローバル変数等記述、必要分のみをコメント付きで記述すること
 
     //開始時処理
