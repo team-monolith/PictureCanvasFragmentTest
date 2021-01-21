@@ -230,12 +230,10 @@ class FirstFragment : Fragment() {
             fileOutputStream.flush()
         }
 
-        output.compress(Bitmap.CompressFormat.PNG,50, ByteArrayOutputStream())
 
-        val data:String=Base64.encodeToString(ByteArrayOutputStream().toByteArray(),Base64.NO_WRAP)
-
-        FileWrite(data)
-        Connect(data)
+        val baos = ByteArrayOutputStream()
+        output.compress(Bitmap.CompressFormat.PNG, 50, baos)
+        Connect(Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP))
 
     }
 
@@ -244,7 +242,7 @@ class FirstFragment : Fragment() {
         POSTDATA.put("id", "1")
         POSTDATA.put("icon",icon)
 
-        "https://compass-user.work/s.php".httpPost(POSTDATA.toList())
+        "https://a.compass-user.work/system/user/change_user.php".httpPost(POSTDATA.toList())
                 .response { _, response, result ->
                     when (result) {
                         is Result.Success -> {
