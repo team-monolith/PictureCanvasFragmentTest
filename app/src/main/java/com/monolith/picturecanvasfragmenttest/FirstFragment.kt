@@ -3,24 +3,21 @@ package com.monolith.picturecanvasfragmenttest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.os.Looper
 import android.util.AttributeSet
+import android.util.Base64
 import android.view.*
 import androidx.fragment.app.Fragment
 import android.widget.Button
 import android.widget.LinearLayout
-import androidx.annotation.RequiresApi
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.view.marginBottom
-import androidx.core.view.marginTop
-import androidx.navigation.fragment.findNavController
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
-import kotlin.random.Random
+import com.github.kittinunf.fuel.httpPost
+import com.github.kittinunf.result.Result
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -42,6 +39,8 @@ class FirstFragment : Fragment() {
     var logY: Int? = null  //タップ追従用Y座標
 
     var size: Rect? = null  //画面サイズ取得用
+
+    var multiFlg:Boolean=false  //マルチタッチ検出用
 
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
@@ -163,6 +162,7 @@ class FirstFragment : Fragment() {
     fun onTouch(view: View, event: MotionEvent) {
         //複数本タッチの場合はピンチ処理
         if (event.pointerCount > 1) {
+            multiFlg=true
             mScaleDetector.onTouchEvent(event)
         }
 
@@ -170,10 +170,11 @@ class FirstFragment : Fragment() {
         else {
             when {
                 event.action == MotionEvent.ACTION_DOWN -> {
+                    multiFlg=false
                     logX = event.x.toInt()
                     logY = event.y.toInt()
                 }
-                event.action == MotionEvent.ACTION_MOVE -> {
+                event.action == MotionEvent.ACTION_MOVE && !multiFlg -> {
                     posX += event.x.toInt() - logX!!
                     posY += event.y.toInt() - logY!!
                     logX = event.x.toInt()
@@ -195,7 +196,6 @@ class FirstFragment : Fragment() {
 
         paint.isAntiAlias = true
 
-
         //左上始点にするため、フレームの左上角が0,0に来るようにオフセットする
         canvas.translate(-(size!!.width() / 2 - size!!.width() / 3f), -(size!!.height() / 2 - size!!.width() / 3f))
 
@@ -210,6 +210,8 @@ class FirstFragment : Fragment() {
         canvas.scale(scale, scale)
 
         if (GLOBAL.ImageBuffer != null) {
+            paint.color=Color.WHITE
+            canvas.drawRect(FrameRect, paint)
             canvas.drawBitmap(GLOBAL.ImageBuffer!!, posX * 1f, posY * 1f, paint)
         }
 
@@ -228,6 +230,36 @@ class FirstFragment : Fragment() {
             fileOutputStream.flush()
         }
 
+        output.compress(Bitmap.CompressFormat.PNG,50, ByteArrayOutputStream())
+
+        val data:String=Base64.encodeToString(ByteArrayOutputStream().toByteArray(),Base64.NO_WRAP)
+
+        FileWrite(data)
+        Connect(data)
+
+    }
+
+    fun Connect(icon:String) {
+        val POSTDATA = HashMap<String, String>()
+        POSTDATA.put("id", "1")
+        POSTDATA.put("icon",icon)
+
+        "https://compass-user.work/s.php".httpPost(POSTDATA.toList())
+                .response { _, response, result ->
+                    when (result) {
+                        is Result.Success -> {
+                        }
+                        is Result.Failure -> {
+                        }
+                    }
+                }
+    }
+
+    fun FileWrite(str: String) {
+        val dir= activity?.filesDir
+        var strbuf=str.replace("<br />","")
+        val file = File("$dir/", "pictureBuffer.txt")
+        file.writeText(strbuf)
     }
 
 
@@ -237,7 +269,7 @@ class FirstFragment : Fragment() {
             override fun run() {
                 //再描画
                 mv.invalidate()
-                handler.postDelayed(this, 25)
+                handler.postDelayed(this, 0)
             }
         })
     }
@@ -264,6 +296,8 @@ class FirstFragment : Fragment() {
                 buttonHeight=view!!.findViewById<LinearLayout>(R.id.linearlayout).top
             }
 
+            //canvas!!.drawColor(Color.BLACK)
+
             FramePaint.strokeWidth = 15f
             FramePaint.style = Paint.Style.STROKE
             FramePaint.color = Color.parseColor("#00FF00")
@@ -277,6 +311,8 @@ class FirstFragment : Fragment() {
             val BottomRect: RectF = RectF(0f, size!!.height() / 2 + size!!.width() / 3f, size!!.width() * 1f, buttonHeight*1f)
             val RightRect: RectF = RectF(size!!.width() / 2 + size!!.width() / 3f, size!!.height() / 2 - size!!.width() / 3f, size!!.width() * 1f, size!!.height() / 2 + size!!.width() / 3f)
             val LeftRect: RectF = RectF(0f, size!!.height() / 2 - size!!.width() / 3f, size!!.width() / 2 - size!!.width() / 3f, size!!.height() / 2 + size!!.width() / 3f)
+
+
 
             //キャンバスのスケールを保存しておく
             canvas!!.save()
